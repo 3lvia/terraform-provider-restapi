@@ -380,7 +380,6 @@ func buildAPIObjectOpts(d *schema.ResourceData) (*apiObjectOpts, error) {
 
 	opts.data = d.Get("data").(string)
 	opts.debug = d.Get("debug").(bool)
-
 	return opts, nil
 }
 

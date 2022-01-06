@@ -20,53 +20,55 @@ import (
 )
 
 type apiClientOpt struct {
-	uri                 string
-	insecure            bool
-	username            string
-	password            string
-	headers             map[string]string
-	timeout             int
-	idAttribute         string
-	createMethod        string
-	readMethod          string
-	updateMethod        string
-	destroyMethod       string
-	copyKeys            []string
-	writeReturnsObject  bool
-	createReturnsObject bool
-	xssiPrefix          string
-	useCookies          bool
-	rateLimit           float64
-	oauthClientID       string
-	oauthClientSecret   string
-	oauthScopes         []string
-	oauthTokenURL       string
-	oauthEndpointParams url.Values
-	certFile            string
-	keyFile             string
-	debug               bool
+	uri                   string
+	insecure              bool
+	username              string
+	password              string
+	headers               map[string]string
+	timeout               int
+	idAttribute           string
+	createMethod          string
+	readMethod            string
+	updateMethod          string
+	destroyMethod         string
+	copyKeys              []string
+	writeReturnsObject    bool
+	createReturnsObject   bool
+	xssiPrefix            string
+	useCookies            bool
+	rateLimit             float64
+	oauthClientID         string
+	oauthClientSecret     string
+	oauthScopes           []string
+	oauthTokenURL         string
+	oauthEndpointParams   url.Values
+	certFile              string
+	keyFile               string
+	debug                 bool
+	wrapCreateCallInArray bool
 }
 
 /*APIClient is a HTTP client with additional controlling fields*/
 type APIClient struct {
-	httpClient          *http.Client
-	uri                 string
-	insecure            bool
-	username            string
-	password            string
-	headers             map[string]string
-	idAttribute         string
-	createMethod        string
-	readMethod          string
-	updateMethod        string
-	destroyMethod       string
-	copyKeys            []string
-	writeReturnsObject  bool
-	createReturnsObject bool
-	xssiPrefix          string
-	rateLimiter         *rate.Limiter
-	debug               bool
-	oauthConfig         *clientcredentials.Config
+	httpClient            *http.Client
+	uri                   string
+	insecure              bool
+	username              string
+	password              string
+	headers               map[string]string
+	idAttribute           string
+	createMethod          string
+	readMethod            string
+	updateMethod          string
+	destroyMethod         string
+	copyKeys              []string
+	writeReturnsObject    bool
+	createReturnsObject   bool
+	xssiPrefix            string
+	rateLimiter           *rate.Limiter
+	debug                 bool
+	oauthConfig           *clientcredentials.Config
+	wrapCreateCallInArray bool
 }
 
 //NewAPIClient makes a new api client for RESTful calls
@@ -138,22 +140,23 @@ func NewAPIClient(opt *apiClientOpt) (*APIClient, error) {
 			Transport: tr,
 			Jar:       cookieJar,
 		},
-		rateLimiter:         rateLimiter,
-		uri:                 opt.uri,
-		insecure:            opt.insecure,
-		username:            opt.username,
-		password:            opt.password,
-		headers:             opt.headers,
-		idAttribute:         opt.idAttribute,
-		createMethod:        opt.createMethod,
-		readMethod:          opt.readMethod,
-		updateMethod:        opt.updateMethod,
-		destroyMethod:       opt.destroyMethod,
-		copyKeys:            opt.copyKeys,
-		writeReturnsObject:  opt.writeReturnsObject,
-		createReturnsObject: opt.createReturnsObject,
-		xssiPrefix:          opt.xssiPrefix,
-		debug:               opt.debug,
+		rateLimiter:           rateLimiter,
+		uri:                   opt.uri,
+		insecure:              opt.insecure,
+		username:              opt.username,
+		password:              opt.password,
+		headers:               opt.headers,
+		idAttribute:           opt.idAttribute,
+		createMethod:          opt.createMethod,
+		readMethod:            opt.readMethod,
+		updateMethod:          opt.updateMethod,
+		destroyMethod:         opt.destroyMethod,
+		copyKeys:              opt.copyKeys,
+		writeReturnsObject:    opt.writeReturnsObject,
+		createReturnsObject:   opt.createReturnsObject,
+		xssiPrefix:            opt.xssiPrefix,
+		debug:                 opt.debug,
+		wrapCreateCallInArray: opt.wrapCreateCallInArray,
 	}
 
 	if opt.oauthClientID != "" && opt.oauthClientSecret != "" && opt.oauthTokenURL != "" {
@@ -202,6 +205,10 @@ func (client *APIClient) sendRequest(method string, path string, data string) (s
 
 	if client.debug {
 		log.Printf("api_client.go: method='%s', path='%s', full uri (derived)='%s', data='%s'\n", method, path, fullURI, data)
+	}
+
+	if client.wrapCreateCallInArray && method == "POST" {
+		data = fmt.Sprintf("[%s]", data)
 	}
 
 	buffer := bytes.NewBuffer([]byte(data))
@@ -295,6 +302,15 @@ func (client *APIClient) sendRequest(method string, path string, data string) (s
 		return "", err2
 	}
 	body := strings.TrimPrefix(string(bodyBytes), client.xssiPrefix)
+
+	if client.wrapCreateCallInArray && method == "POST" {
+		body = data[1 : len(data)-1]
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return body, fmt.Errorf("unexpected response code '%d': %s", resp.StatusCode, body)
+	}
+
 	if client.debug {
 		log.Printf("api_client.go: BODY:\n%s\n", body)
 	}

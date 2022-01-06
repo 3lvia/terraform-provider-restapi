@@ -129,6 +129,11 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("REST_API_DEBUG", nil),
 				Description: "Enabling this will cause lots of debug information to be printed to STDOUT by the API client.",
 			},
+			"wrap_create_call_in_array": {
+				Type:        schema.TypeBool,
+				Description: "Whether to wrap the data json object in an array [] before calling the API endpoint on create. Used when the create endpoint expects an array of objects. ",
+				Optional:    true,
+			},
 			"oauth_client_credentials": {
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -214,20 +219,21 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	opt := &apiClientOpt{
-		uri:                 d.Get("uri").(string),
-		insecure:            d.Get("insecure").(bool),
-		username:            d.Get("username").(string),
-		password:            d.Get("password").(string),
-		headers:             headers,
-		useCookies:          d.Get("use_cookies").(bool),
-		timeout:             d.Get("timeout").(int),
-		idAttribute:         d.Get("id_attribute").(string),
-		copyKeys:            copyKeys,
-		writeReturnsObject:  d.Get("write_returns_object").(bool),
-		createReturnsObject: d.Get("create_returns_object").(bool),
-		xssiPrefix:          d.Get("xssi_prefix").(string),
-		rateLimit:           d.Get("rate_limit").(float64),
-		debug:               d.Get("debug").(bool),
+		uri:                   d.Get("uri").(string),
+		insecure:              d.Get("insecure").(bool),
+		username:              d.Get("username").(string),
+		password:              d.Get("password").(string),
+		headers:               headers,
+		useCookies:            d.Get("use_cookies").(bool),
+		timeout:               d.Get("timeout").(int),
+		idAttribute:           d.Get("id_attribute").(string),
+		copyKeys:              copyKeys,
+		writeReturnsObject:    d.Get("write_returns_object").(bool),
+		createReturnsObject:   d.Get("create_returns_object").(bool),
+		xssiPrefix:            d.Get("xssi_prefix").(string),
+		rateLimit:             d.Get("rate_limit").(float64),
+		debug:                 d.Get("debug").(bool),
+		wrapCreateCallInArray: d.Get("wrap_create_call_in_array").(bool),
 	}
 
 	if v, ok := d.GetOk("create_method"); ok {
