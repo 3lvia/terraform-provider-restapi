@@ -3,5 +3,5 @@
     "extends": [ "github>3lvia/renovate-config:terraform.json" ],
     "baseBranches": ["master"],
     "labels": [ "dependencies" ],
-    "forkProcessing": "enabled"
+    "forkProcessing": "true"
 }
