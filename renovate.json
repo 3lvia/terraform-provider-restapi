@@ -1,7 +1,6 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [ "github>3lvia/renovate-config:terraform.json" ],
-    "baseBranches": ["trunk"],
     "labels": [ "dependencies" ],
     "forkProcessing": "enabled"
 }
